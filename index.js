@@ -7,7 +7,7 @@ const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(cors());
-
+ 
 app.post("/getAccessToken", (req, res) => {
   const { code } = req.body;
   const myHeaders = new Headers();
@@ -65,7 +65,7 @@ app.post("/refreshTokens", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("Working CG...");
+  res.send("Working...");
 });
 
 // Start the server
