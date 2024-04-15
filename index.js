@@ -1,78 +1,75 @@
 const express = require("express");
-const axios = require("axios");
-const cors = require("cors");
 const bodyParser = require("body-parser");
+const cors = require("cors");
+require("dotenv").config();
 
 const app = express();
-app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
-const port = process.env.PORT || 3001;
+app.use(bodyParser.json());
+app.use(cors());
 
-app.post("/api/keycloak-token", async (req, res) => {
-  try {
-    const { code } = req.body;
-
-    // Make the request to Keycloak
-    const keycloakUrl =
-      "https://ssodev.dragonteam.dev/auth/realms/Variiance/protocol/openid-connect/token";
-    const response = await axios.post(
-      keycloakUrl,
-      {
-        client_id: "VLC",
-        redirect_uri: "https://localhost:3000/assets/redirectPage.html",
-        code: code,
-        grant_type: "authorization_code",
-      },
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-
-    // Respond with the token data
-    res.json(response.data);
-  } catch (error) {
-    if (error.response && error.response.data) {
-      // If the error response contains data, return it
-      return res.status(error.response.status).json(error.response.data);
-    } else {
-      // Otherwise, return a generic error message
-      console.error("Error:", error.message);
-      return res.status(500).json({ error: "Internal Server Error" });
-    }
-  }
+app.post("/getAccessToken", (req, res) => {
+  const { code } = req.body;
+  const myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+  const urlencoded = new URLSearchParams();
+  urlencoded.append("client_id", process.env.CLIENT_ID);
+  urlencoded.append("grant_type", "authorization_code");
+  urlencoded.append("scope", "https://graph.microsoft.com/.default");
+  urlencoded.append("client_secret", process.env.CLIENT_SEC);
+  urlencoded.append("code", code);
+  urlencoded.append("redirect_uri", `${process.env.REDIRECT_URI}/assets/login.html`);
+  const requestOptions = {
+    method: "POST",
+    headers: myHeaders,
+    body: urlencoded,
+  };
+  fetch(
+    `https://login.microsoftonline.com/${process.env.TENANT}/oauth2/v2.0/token`,
+    requestOptions
+  )
+    .then((response) => response.json())
+    .then((result) => {
+      res.json({ result });
+    })
+    .catch((error) => {
+      res.status(500).send(error);
+    });
 });
 
-app.post("/api/refresh-token", async (req, res) => {
-  try {
-    const { refresh_token } = req.body;
-    const keycloakUrl =
-      "https://ssodev.dragonteam.dev/auth/realms/Variiance/protocol/openid-connect/token";
-    const response = await axios.post(
-      keycloakUrl,
-      {
-        client_id: "VLC",
-        grant_type: "refresh_token",
-        refresh_token: refresh_token,
-      },
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-    res.json(response.data);
-  } catch (error) {
-    console.error("Error:", error.response.data);
-    res.status(500).json({ error: "Failed to refresh token" });
-  }
+app.post("/refreshTokens", (req, res) => {
+  const { refreshToken } = req.body;
+  const myHeaders = new Headers();
+  myHeaders.append("Content-Type", "application/x-www-form-urlencoded");
+  const urlencoded = new URLSearchParams();
+  urlencoded.append("client_id", process.env.CLIENT_ID);
+  urlencoded.append("grant_type", "refresh_token");
+  urlencoded.append("client_secret", process.env.CLIENT_SEC);
+  urlencoded.append("refresh_token", refreshToken);
+  const requestOptions = {
+    method: "POST",
+    headers: myHeaders,
+    body: urlencoded,
+  };
+  fetch(
+    `https://login.microsoftonline.com/${process.env.TENANT}/oauth2/v2.0/token`,
+    requestOptions
+  )
+    .then((response) => response.json())
+    .then((result) => {
+      res.json({ result });
+    })
+    .catch((error) => {
+      res.status(500).send(error);
+    });
 });
 
 app.get("/", (req, res) => {
   res.send("Working...");
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// Start the server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
