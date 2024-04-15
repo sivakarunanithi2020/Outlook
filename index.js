@@ -65,7 +65,7 @@ app.post("/refreshTokens", (req, res) => {
 });
 
 app.get("/", (req, res) => {
-  res.send("Working...");
+  res.send("Working CG...");
 });
 
 // Start the server
